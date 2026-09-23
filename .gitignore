@@ -14,4 +14,8 @@ tools/
 transform/target/
 transform/logs/
 transform/dbt_packages/
+transform/.user.yml
 logs/
+bin/
+obj/
+*.user

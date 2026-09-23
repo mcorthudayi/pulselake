@@ -8,3 +8,7 @@ updates:
     directory: "/transform"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "nuget"
+    directory: "/api/PulseLake.Api"
+    schedule:
+      interval: "weekly"

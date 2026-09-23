@@ -17,6 +17,9 @@ select
     )                                                 as marital_status,
     resource->'address'->0->>'city'                   as city,
     resource->'address'->0->>'state'                  as state,
-    resource->'address'->0->>'postalCode'             as postal_code,
+    case
+        when resource->'address'->0->>'postalCode' ~ '^0{3}' then null
+        else resource->'address'->0->>'postalCode'
+    end                                               as postal_code,
     resource->'communication'->0->'language'->>'text' as language
 from source
