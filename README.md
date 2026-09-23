@@ -12,20 +12,21 @@ role-based FHIR API with full audit logging.
 flowchart LR
   S[Synthea<br/>synthetic patients] -->|FHIR R4 bundles| I[Python ingestion]
   I --> R[(raw.fhir_resources<br/>JSONB)]
-  R --> D[dbt<br/>staging → marts]
-  D --> M[(analytics marts)]
-  D --> X[(de-identified mart)]
+  R --> ST[dbt staging<br/>views]
+  ST --> M[(marts<br/>dim / fct tables)]
+  M --> X[(deid<br/>pseudonymized)]
+  K[(security.deid_config<br/>salt)] -.-> X
   R --> A[.NET 10 FHIR API<br/>RBAC + audit log]
   A --> W[React portal]
   M --> W
   O[Airflow] -.orchestrates.-> I
-  O -.-> D
+  O -.-> ST
 ```
 
 ## Roadmap
 
 - [x] Phase 1 — Infrastructure, synthetic data, idempotent raw ingestion
-- [ ] Phase 2 — dbt models, data quality tests, de-identified mart
+- [x] Phase 2 — dbt models, data quality tests, de-identified mart
 - [ ] Phase 3 — .NET FHIR API with RBAC and audit logging
 - [ ] Phase 4 — React clinician & analyst portal
 - [ ] Phase 5 — Airflow orchestration, CI
@@ -37,9 +38,19 @@ cp .env.example .env
 docker compose up -d --wait
 ./scripts/generate_synthea.sh 100
 python3 -m venv .venv && source .venv/bin/activate
-pip install -r ingestion/requirements.txt
+pip install -r ingestion/requirements.txt -r transform/requirements.txt
 python ingestion/load_fhir.py
+./scripts/dbt.sh build
 ```
+
+## Data model
+
+| Layer | Schema | Models |
+|---|---|---|
+| Raw | `raw` | `fhir_resources`, `ingestion_runs` |
+| Staging | `staging` | `stg_fhir__patients`, `stg_fhir__encounters`, `stg_fhir__conditions`, `stg_fhir__observations` |
+| Marts | `marts` | `dim_patients`, `fct_encounters`, `fct_conditions`, `fct_observations` |
+| De-identified | `deid` | `deid_patients`, `deid_encounters`, `deid_conditions` |
 
 ## Design notes
 
@@ -47,6 +58,9 @@ python ingestion/load_fhir.py
 - **Change detection:** each resource is hashed (SHA-256 of canonical JSON); only changed resources are rewritten.
 - **Bulk loading:** files are streamed via `COPY` into a temp table and upserted in a single statement.
 - **Lineage:** every run is recorded in `raw.ingestion_runs` with per-run counts and status.
+- **De-identification:** direct identifiers are removed; IDs are replaced with salted SHA-256 keys; dates are reduced to year; ages 90+ are grouped; ZIP codes are truncated to 3 digits (modeled on HIPAA Safe Harbor).
+- **Key management:** the pseudonymization salt is generated inside PostgreSQL (`pgcrypto`) in a locked-down `security` schema. It never appears in the repo, in `.env`, or in compiled dbt SQL.
+- **Data quality:** uniqueness, referential integrity, accepted values, temporal consistency, and a test that fails the build if any direct identifier column appears in the `deid` schema.
 
 ## Security
 

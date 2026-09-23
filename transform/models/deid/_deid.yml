@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: deid_patients
+    description: De-identified patients. Salted SHA-256 keys, birth year only, ages 90+ grouped, 3-digit ZIP.
+    columns:
+      - name: patient_key
+        data_tests:
+          - unique
+          - not_null
+      - name: age_band
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["0-17", "18-34", "35-49", "50-64", "65-89", "90+"]
+
+  - name: deid_encounters
+    description: De-identified encounters. Dates reduced to year.
+    columns:
+      - name: encounter_key
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('deid_patients')
+                field: patient_key
+
+  - name: deid_conditions
+    description: De-identified conditions. Dates reduced to year.
+    columns:
+      - name: condition_key
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('deid_patients')
+                field: patient_key

@@ -11,3 +11,7 @@ tools/
 .DS_Store
 .idea/
 .vscode/
+transform/target/
+transform/logs/
+transform/dbt_packages/
+logs/

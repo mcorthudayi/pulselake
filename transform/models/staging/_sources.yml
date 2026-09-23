@@ -1,0 +1,12 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: fhir_resources
+      - name: ingestion_runs
+  - name: security
+    schema: security
+    tables:
+      - name: deid_config

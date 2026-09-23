@@ -4,3 +4,7 @@ updates:
     directory: "/ingestion"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "pip"
+    directory: "/transform"
+    schedule:
+      interval: "weekly"

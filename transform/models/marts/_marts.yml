@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  - name: dim_patients
+    description: One row per patient. Contains direct identifiers; restricted access.
+    columns:
+      - name: patient_id
+        data_tests:
+          - unique
+          - not_null
+      - name: gender
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["male", "female", "other", "unknown"]
+      - name: birth_date
+        data_tests:
+          - not_null
+
+  - name: fct_encounters
+    description: One row per clinical encounter.
+    columns:
+      - name: encounter_id
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patients')
+                field: patient_id
+      - name: started_at
+        data_tests:
+          - not_null
+
+  - name: fct_conditions
+    description: One row per diagnosed condition.
+    columns:
+      - name: condition_id
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patients')
+                field: patient_id
+      - name: encounter_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('fct_encounters')
+                field: encounter_id
+
+  - name: fct_observations
+    description: One row per observation (vitals, labs, surveys).
+    columns:
+      - name: observation_id
+        data_tests:
+          - unique
+          - not_null
+      - name: patient_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_patients')
+                field: patient_id
