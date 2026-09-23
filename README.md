@@ -38,34 +38,36 @@ flowchart LR
 | Portal | React 19, TypeScript, Vite |
 | Delivery | Docker Compose, GitHub Actions, Dependabot, gitleaks |
 
-## Quick start
+## Quick start (macOS)
+
+Requirements: Docker Desktop, Python 3.11+, .NET 10 SDK, Node.js 22+.
 
 ```bash
-cp .env.example .env
-sed -i '' "s/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=$(openssl rand -hex 24)/" .env
-sed -i '' "s/^API_DB_PASSWORD=.*/API_DB_PASSWORD=$(openssl rand -hex 24)/" .env
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r ingestion/requirements.txt -r transform/requirements.txt
-./scripts/pipeline.sh
+./scripts/up.sh
 ```
 
-`pipeline.sh` starts PostgreSQL, applies migrations, generates synthetic patients (first run only),
-loads them, builds and tests the dbt models, and configures the API database role.
-It refuses to run while any password in `.env` is still a placeholder.
-
-Run the API, then verify it:
+One command sets up everything: it creates `.env` with generated passwords, installs dependencies,
+starts PostgreSQL, runs the data pipeline, starts the API and the portal in the background,
+runs the smoke tests and opens the portal already signed in as a clinician.
 
 ```bash
-dotnet user-jwts create --project api/PulseLake.Api --name dr.grey --role clinician --output token
-./scripts/api.sh
-./scripts/smoke_test.sh
+./scripts/login.sh analyst
+./scripts/login.sh auditor
+./scripts/down.sh
+./scripts/down.sh --all
 ```
 
-Run the portal in another terminal and open http://127.0.0.1:5173:
+## Scripts
 
-```bash
-cd portal && npm install && npm run dev
-```
+| Script | Purpose |
+|---|---|
+| `up.sh` | Bootstrap and start the whole stack, then open the portal |
+| `down.sh` | Stop the API and portal (`--all` also stops PostgreSQL) |
+| `login.sh <role>` | Mint a development token and open the portal as that role |
+| `pipeline.sh` | Migrations, synthetic data, ingestion, dbt build, API role |
+| `smoke_test.sh` | 23 end-to-end checks against the running API and database |
+| `api.sh` | Run the API with credentials loaded from `.env` |
+| `dbt.sh` | Run any dbt command with credentials loaded from `.env` |
 
 ## Data model
 
@@ -98,8 +100,9 @@ search returns a `searchset` Bundle ordered by clinical date (newest first), err
 | Population analytics | `analyst` | Top conditions (small-cell suppressed), age distribution, pseudonymized patient table |
 | Access audit | `auditor` | Every request with user, role, resource and status; denied attempts highlighted |
 
-The token is held in memory only (no localStorage). The portal reaches the API through the Vite
-proxy, so the API does not need to enable CORS.
+Tokens are held in memory only (no localStorage). In development, `login.sh` passes the token in the
+URL fragment, which is never sent to a server and is removed from the address bar immediately.
+The portal reaches the API through the Vite proxy, so the API does not need to enable CORS.
 
 ## Testing
 
@@ -132,6 +135,6 @@ proxy, so the API does not need to enable CORS.
 - `audit.access_log` is append-only: triggers reject `UPDATE`, `DELETE` and `TRUNCATE`; bypassing them requires an explicit schema change.
 - JWT signing keys are stored in .NET user-secrets, outside the repository.
 - Rate limiting (120 requests/minute per user), `nosniff`, `DENY` framing and `no-store` caching on every response.
-- The portal keeps tokens in memory only and sends no referrer.
+- The portal keeps tokens in memory only, accepts URL tokens only in development, and sends no referrer.
 - dbt anonymous usage tracking is disabled.
 - Dependencies are monitored by Dependabot (pip, NuGet, npm and GitHub Actions).

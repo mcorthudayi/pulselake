@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Role, Session } from './api'
+import { parseToken, type Role, type Session } from './api'
 import Login from './Login'
 import ClinicianView from './ClinicianView'
 import AnalystView from './AnalystView'
@@ -11,9 +11,22 @@ const LABELS: Record<Role, string> = {
   auditor: 'Access audit'
 }
 
+function sessionFromUrl(): Session | null {
+  if (!import.meta.env.DEV) return null
+  const match = window.location.hash.match(/^#token=([^&]+)$/)
+  if (!match) return null
+  window.history.replaceState(null, '', window.location.pathname + window.location.search)
+  try {
+    const session = parseToken(decodeURIComponent(match[1]))
+    return session.roles.length > 0 ? session : null
+  } catch {
+    return null
+  }
+}
+
 export default function App() {
-  const [session, setSession] = useState<Session | null>(null)
-  const [tab, setTab] = useState<Role | null>(null)
+  const [session, setSession] = useState<Session | null>(sessionFromUrl)
+  const [tab, setTab] = useState<Role | null>(() => session?.roles[0] ?? null)
 
   if (!session) {
     return (
