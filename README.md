@@ -138,3 +138,9 @@ The portal reaches the API through the Vite proxy, so the API does not need to e
 - The portal keeps tokens in memory only, accepts URL tokens only in development, and sends no referrer.
 - dbt anonymous usage tracking is disabled.
 - Dependencies are monitored by Dependabot (pip, NuGet, npm and GitHub Actions).
+
+## Screenshots
+
+| Clinical records | Population analytics | Access audit |
+|---|---|---|
+| ![Clinician](docs/screenshots/clinician.png) | ![Analyst](docs/screenshots/analyst.png) | ![Auditor](docs/screenshots/auditor.png) |
