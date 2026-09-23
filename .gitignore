@@ -19,3 +19,6 @@ logs/
 bin/
 obj/
 *.user
+node_modules/
+portal/dist/
+*.tsbuildinfo

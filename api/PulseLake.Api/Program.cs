@@ -280,7 +280,7 @@ static class Fhir
                         WHERE g ILIKE @name || '%')))
           AND (@gender IS NULL OR resource->>'gender' = @gender)
           AND (@birthdate IS NULL OR (resource->>'birthDate')::date = @birthdate)
-        ORDER BY resource_id
+        ORDER BY resource->'name'->0->>'family', resource_id
         LIMIT @limit
         """;
 
@@ -290,7 +290,17 @@ static class Fhir
         WHERE resource_type = @type
           AND (resource @> jsonb_build_object(@field, jsonb_build_object('reference', 'urn:uuid:' || @patient))
             OR resource @> jsonb_build_object(@field, jsonb_build_object('reference', 'Patient/' || @patient)))
-        ORDER BY resource_id
+        ORDER BY coalesce(
+                     resource->>'effectiveDateTime',
+                     resource->'period'->>'start',
+                     resource->'performedPeriod'->>'start',
+                     resource->>'onsetDateTime',
+                     resource->>'occurrenceDateTime',
+                     resource->>'authoredOn',
+                     resource->>'recordedDate',
+                     resource->>'issued',
+                     '') DESC,
+                 resource_id
         LIMIT @limit
         """;
 
