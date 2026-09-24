@@ -46,7 +46,7 @@ jobs:
           npm ci
           npm audit --omit=dev
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
 
@@ -71,7 +71,7 @@ jobs:
             ingestion/requirements.txt
             transform/requirements.txt
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: "10.0.x"
 
